@@ -43,11 +43,15 @@ fn main() {
         //     println!("{} IPv6 {}", domain, addr);
         // }
     let args = env::args().skip(1).collect::<Vec<String>>();
-    let ipv4_addrs: Vec<IpDomain> = ipv4(args);
+    let ipv4_addrs: Vec<IpDomain> = ipv4(&args);
+    let ipv6_addrs: Vec<IpDomain> = ipv6(&args);
     for addr in ipv4_addrs {
         println!(" IPv4 {:?}",  addr);
     }
         println!(); // Add a blank line between domains
+    for addr in ipv6_addrs {
+        println!(" IPv6 {:?}",  addr);
+    }
 
     //}
     //cant use ipv_addrs here
@@ -59,7 +63,7 @@ struct IpDomain {
     ipv6: bool,
     ip_address:IpAddr
 }
-fn ipv4(ipv4domains: Vec<String>) -> Vec<IpDomain> {
+fn ipv4(ipv4domains: &Vec<String>) -> Vec<IpDomain> {
     let mut ipv4_addrs_return = vec![];
     for domain in ipv4domains {
         // Perform DNS lookup for IPv4 addresses
@@ -87,22 +91,22 @@ fn ipv4(ipv4domains: Vec<String>) -> Vec<IpDomain> {
     }
     return ipv4_addrs_return
 }
-fn ipv6(ipv6domains: Vec<String>) -> Vec<IpDomain> {
+fn ipv6(ipv6domains: &Vec<String>) -> Vec<IpDomain> {
     let mut ipv6_addrs_return = vec![];
     for domain in ipv6domains {
         // Perform DNS lookup for IPv4 addresses
         let ipv6_addrs = match lookup_host(&domain) {
             Ok(addrs) => addrs.into_iter()
-                .filter(|addr| addr.is_ipv4())
+                .filter(|addr| addr.is_ipv6())
                 .collect::<Vec<IpAddr>>(),
             Err(err) => {
-                println!("Error: Could not resolve IPv4 addresses for {}: {}", domain, err);
+                println!("Error: Could not resolve IPv6 addresses for {}: {}", domain, err);
                 continue;
             }
         };
         // Print IPv4 addresses
         for addr in ipv6_addrs {
-            println!("{} IPv4 {}", domain, addr);
+            println!("{} IPv6 {}", domain, addr);
             let con = IpDomain{
                 domain_name: domain.clone(),
                 ipv4: false,
