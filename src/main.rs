@@ -87,3 +87,31 @@ fn ipv4(ipv4domains: Vec<String>) -> Vec<IpDomain> {
     }
     return ipv4_addrs_return
 }
+fn ipv6(ipv6domains: Vec<String>) -> Vec<IpDomain> {
+    let mut ipv6_addrs_return = vec![];
+    for domain in ipv6domains {
+        // Perform DNS lookup for IPv4 addresses
+        let ipv6_addrs = match lookup_host(&domain) {
+            Ok(addrs) => addrs.into_iter()
+                .filter(|addr| addr.is_ipv4())
+                .collect::<Vec<IpAddr>>(),
+            Err(err) => {
+                println!("Error: Could not resolve IPv4 addresses for {}: {}", domain, err);
+                continue;
+            }
+        };
+        // Print IPv4 addresses
+        for addr in ipv6_addrs {
+            println!("{} IPv4 {}", domain, addr);
+            let con = IpDomain{
+                domain_name: domain.clone(),
+                ipv4: false,
+                ipv6: true,
+                ip_address: addr,
+            };
+            ipv6_addrs_return.push(con);
+        }
+        println!(); // Add a blank line between domains
+    }
+    return ipv6_addrs_return
+}
