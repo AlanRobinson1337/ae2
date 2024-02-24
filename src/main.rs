@@ -1,6 +1,6 @@
 extern crate dns_lookup;
 
-use std::net::IpAddr;
+use std::net::{IpAddr, SocketAddr};
 use dns_lookup::{lookup_host};
 use std::env;
 
@@ -61,8 +61,18 @@ struct IpDomain {
     domain_name: String,
     ipv4: bool,
     ipv6: bool,
-    ip_address:IpAddr
+    ip_address:IpAddr,
+    ip_address_port:SocketAddr
 }
+
+
+fn add_port(ip_addr: IpAddr) -> SocketAddr{
+    let ip_addr_str = ip_addr.to_string();
+    let ip_addr = ip_addr_str.parse::<IpAddr>().unwrap();
+    let socket_addr = SocketAddr::new(ip_addr, 80);
+    return socket_addr
+}
+
 fn ipv4(ipv4domains: &Vec<String>) -> Vec<IpDomain> {
     let mut ipv4_addrs_return = vec![];
     for domain in ipv4domains {
@@ -84,6 +94,7 @@ fn ipv4(ipv4domains: &Vec<String>) -> Vec<IpDomain> {
                 ipv4: true,
                 ipv6: false,
                 ip_address: addr,
+                ip_address_port: add_port(addr)
             };
             ipv4_addrs_return.push(con);
         }
@@ -94,7 +105,7 @@ fn ipv4(ipv4domains: &Vec<String>) -> Vec<IpDomain> {
 fn ipv6(ipv6domains: &Vec<String>) -> Vec<IpDomain> {
     let mut ipv6_addrs_return = vec![];
     for domain in ipv6domains {
-        // Perform DNS lookup for IPv4 addresses
+        // Perform DNS lookup for IPv6 addresses
         let ipv6_addrs = match lookup_host(&domain) {
             Ok(addrs) => addrs.into_iter()
                 .filter(|addr| addr.is_ipv6())
@@ -112,6 +123,7 @@ fn ipv6(ipv6domains: &Vec<String>) -> Vec<IpDomain> {
                 ipv4: false,
                 ipv6: true,
                 ip_address: addr,
+                ip_address_port: add_port(addr)
             };
             ipv6_addrs_return.push(con);
         }
