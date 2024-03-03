@@ -3,7 +3,6 @@ extern crate dns_lookup;
 use std::net::{IpAddr, SocketAddr, TcpStream};
 use dns_lookup::{lookup_host};
 use std::{env, thread};
-use std::io::{Read, Write};
 use std::sync::mpsc;
 use std::sync::mpsc::Sender;
 
@@ -39,7 +38,8 @@ fn main() {
 
     let mut flag = true;
     let mut transmitters: Vec<Sender<_>> = vec![];
-    println!("{}", addrs.len());
+    //println!("{}", addrs.len());
+
     for addr in addrs {
         let (conn_attempt_tx, conn_attempt_rx) = mpsc::channel();
         let cloned_tx = conn_client_tx.clone();
@@ -59,7 +59,7 @@ fn main() {
                     println!("Connected to: {:?}", addr.ip_address_port);
                     println!("{:?}", stream);
                     flag = false;
-                    conn_client_tx.send(format!("{:?}",stream));
+                    conn_client_tx.send(format!("{:?}", stream));
                 }
                 Err(_) => {}
             }
@@ -76,8 +76,6 @@ fn main() {
 #[derive(Clone)]
 struct IpDomain {
     domain_name: String,
-    ipv4: bool,
-    ipv6: bool,
     ip_address:IpAddr,
     ip_address_port:SocketAddr
 }
@@ -106,8 +104,6 @@ fn ipv4(ipv4domains: &Vec<String>) -> Vec<IpDomain> {
             println!("{} IPv4 {}", domain, addr);
             let con = IpDomain{
                 domain_name: domain.clone(),
-                ipv4: true,
-                ipv6: false,
                 ip_address: addr,
                 ip_address_port: add_port(addr)
             };
@@ -135,8 +131,6 @@ fn ipv6(ipv6domains: &Vec<String>) -> Vec<IpDomain> {
             println!("{} IPv6 {}", domain, addr);
             let con = IpDomain{
                 domain_name: domain.clone(),
-                ipv4: false,
-                ipv6: true,
                 ip_address: addr,
                 ip_address_port: add_port(addr)
             };
