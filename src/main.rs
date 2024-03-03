@@ -1,23 +1,79 @@
 extern crate dns_lookup;
 
-use std::net::{IpAddr, SocketAddr};
+use std::net::{IpAddr, SocketAddr, TcpStream};
 use dns_lookup::{lookup_host};
-use std::env;
+use std::{env, thread};
+use std::io::{Read, Write};
+use std::sync::mpsc;
+use std::sync::mpsc::Sender;
 
 fn main() {
 
     let args = env::args().skip(1).collect::<Vec<String>>();
     let ipv4_addrs: Vec<IpDomain> = ipv4(&args);
     let ipv6_addrs: Vec<IpDomain> = ipv6(&args);
-    for addr in ipv4_addrs {
-        println!(" IPv4 {:?}",  addr);
+    let mut addrs:Vec<IpDomain>= vec![];
+    for val in &ipv4_addrs {
+        addrs.push(val.clone());
     }
-        println!(); // Add a blank line between domains
-    for addr in ipv6_addrs {
-        println!(" IPv6 {:?}",  addr);
+    for val in &ipv6_addrs {
+        addrs.push(val.clone());
     }
+
+    println!(); // Add a blank line between domains
+
+    let (conn_client_tx, conn_client_rx) = mpsc::channel();
+
+    // connected client thread
+    thread::spawn(move || {
+        //println!("{:?}", conn_client_rx.recv());
+        let stream = conn_client_rx.recv();
+        let mut request_data = String::new();
+        request_data.push_str("GET / HTTP/1.1\r\n");
+        request_data.push_str(&format!("Host: {:?}\r\n", stream));
+        request_data.push_str("Connection: close\r\n");
+        request_data.push_str("\r\n");
+
+        println!("{}", request_data)
+    });
+
+    let mut flag = true;
+    let mut transmitters: Vec<Sender<_>> = vec![];
+    println!("{}", addrs.len());
+    for addr in addrs {
+        let (conn_attempt_tx, conn_attempt_rx) = mpsc::channel();
+        let cloned_tx = conn_client_tx.clone();
+        // connection attempt thread
+        thread::spawn(move || {
+            //println!("hi there");
+            let msg = conn_attempt_rx.recv();
+            //println!("{:?}", msg);
+            cloned_tx.send(format!("{} {}", addr.domain_name, addr.ip_address_port));
+        });
+        transmitters.push(conn_attempt_tx);
+
+        if flag {
+            match TcpStream::connect(addr.ip_address_port) {
+                Ok(stream) => {
+                    // Connection successful, print connected IP
+                    println!("Connected to: {:?}", addr.ip_address_port);
+                    println!("{:?}", stream);
+                    flag = false;
+                    conn_client_tx.send(format!("{:?}",stream));
+                }
+                Err(_) => {}
+            }
+        }
+    }
+
+    for tx in transmitters {
+        tx.send("hi");
+       // println!("Hi But Send")
+    }
+
 }
 #[derive(Debug)]
+#[derive(Clone)]
 struct IpDomain {
     domain_name: String,
     ipv4: bool,
